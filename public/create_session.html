@@ -14,6 +14,21 @@
             padding: 10px;
             width: 100%;
         }
+        #attendance {
+            border: 1px solid #ccc; /* Same border as share link */
+            padding: 10px; /* Same padding */
+            width: 100%; /* Same width */
+            display: inline-block; /* Make it behave like a block-level element */
+            text-align: center; /* Center text */
+            margin-top: 10px; /* Add some space above */
+            background-color: #f0f0f0; /* Background color */
+            text-decoration: none; /* Remove underline */
+            color: #333; /* Text color */
+            transition: background-color 0.3s; /* Smooth background transition */
+        }
+        #attendance:hover {
+            background-color: #e0e0e0; /* Darken background on hover */
+        }
     </style>
 </head>
 <body>
@@ -40,10 +55,12 @@
         <p>Copy and share this link with others:</p>
         <input type="text" id="shareLink" readonly>
         <button onclick="copyToClipboard()">Copy Link</button>
+
+        <a id="attendance" href="#" style="display: none;">Click here to get attendance data</a>
     </div>
 
     <script>
-        document.getElementById('sessionForm').addEventListener('submit', async function(event) {
+        document.getElementById('sessionForm').addEventListener('submit', function(event) {
             event.preventDefault();
 
             const name = document.getElementById('name').value;
@@ -56,43 +73,47 @@
 
             // Get the user's geolocation
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        document.getElementById('latitude').value = position.coords.latitude;
-                        document.getElementById('longitude').value = position.coords.longitude;
-                    },
-                    (error) => {
-                        console.error('Error getting location:', error);
-                        alert('Unable to fetch location.');
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    const latitude = position.coords.latitude.toFixed(14);
+                    const longitude = position.coords.longitude.toFixed(14);
+
+                    // Submit the form via fetch (POST request) only after getting the location
+                    try {
+                        const response = await fetch('/create-session', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ name, subject, latitude, longitude })
+                        });
+
+                        const data = await response.json();
+
+                        if (response.ok && data.sessionId) {
+                            const shareLink = `${window.location.origin}/attendance/${data.sessionId}`;
+                            const dataLink = `${window.location.origin}/session/${data.sessionId}`;
+                            document.getElementById('shareLink').value = shareLink;
+                            document.getElementById('shareLinkContainer').style.display = 'block';
+
+                            const attendanceLink = document.getElementById("attendance");
+                            attendanceLink.setAttribute('href', dataLink); // Set the correct href
+                            attendanceLink.style.display = 'inline'; // Make the link visible
+                            attendanceLink.innerText = "Click here to get attendance data"; // Update link text
+                        } else {
+                            alert('Error creating session: ' + data.message);
+                        }
+
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('An error occurred. Please try again.');
                     }
-                );
+
+                }, (error) => {
+                    console.error('Error getting location:', error);
+                    alert('Unable to fetch location.');
+                });
             } else {
                 alert('Geolocation is not supported by this browser.');
-            }
-
-            // Submit the form via fetch (POST request)
-            try {
-                const response = await fetch('/create-session', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ name, subject })
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.sessionId) {
-                    const shareLink = `${window.location.origin}/attendance/${data.sessionId}`;
-                    document.getElementById('shareLink').value = shareLink;
-                    document.getElementById('shareLinkContainer').style.display = 'block';
-                } else {
-                    alert('Error creating session: ' + data.message);
-                }
-
-            } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred. Please try again.');
             }
         });
 

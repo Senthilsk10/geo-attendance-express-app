@@ -80,7 +80,7 @@ const sessionSchema = new mongoose.Schema({
   });
   
 const Session = mongoose.model('Session', sessionSchema);
-Session.index({ location: '2dsphere' });
+sessionSchema.index({ location: '2dsphere' });
 
 app.get('/create-session', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'create_session.html'));
@@ -89,6 +89,7 @@ app.get('/create-session', (req, res) => {
 
 app.post('/create-session', async (req, res) => {
     const { name, subject, latitude,longitude } = req.body;
+    console.log(req.body);
     
     const newSession = new Session({
       name,
@@ -154,6 +155,80 @@ app.get('/attendance/:sessionId', async (req, res) => {
     } catch (err) {
       res.status(500).json({ message: 'Error retrieving session', error: err.message });
     }
+  });
+
+
+  const earthRadiusInMeters = 6371000;
+
+  // Express route to get documents within 10 meters of each other for a session
+app.get('/session/:sessionId', async (req, res) => {
+  try {
+    const sessionId =new  mongoose.Types.ObjectId(req.params.sessionId);
+    const radiusInMeters = 10; // 10 meter radius
+
+    // Find one document to use as a reference for coordinates and IP address
+    const referenceDoc = await Attendance.findOne({ session: sessionId });
+
+    if (!referenceDoc || !referenceDoc.location || !referenceDoc.location.coordinates) {
+      return res.status(404).json({ message: 'Reference location not found for this session' });
+    }
+
+    const [refLongitude, refLatitude] = referenceDoc.location.coordinates;
+    const refIpAddress = referenceDoc.ipAddress;
+
+    // Aggregation pipeline to find documents within 10 meters and different IP addresses
+    const withinDifferentIp = await Attendance.aggregate([
+      {
+        $geoNear: {
+          near: { type: 'Point', coordinates: [refLongitude, refLatitude] },
+          distanceField: 'distance',
+          maxDistance: radiusInMeters,
+          spherical: true,
+          query: { session: sessionId, ipAddress: { $ne: refIpAddress } } // Exclude same IP
+        }
+      }
+    ]);
+
+    const outsideLocation = await Attendance.aggregate([
+      {
+        $geoNear: {
+          near: { type: 'Point', coordinates: [refLongitude, refLatitude] },
+          distanceField: 'distance',
+          maxDistance: radiusInMeters,
+          spherical: true,
+          query: { session: sessionId }
+        }
+      },
+      {
+        $match: {
+          $expr: { $gt: ['$distance', radiusInMeters] } // Only keep documents outside the radius
+        }
+      }
+    ]);
+
+    // Aggregation pipeline to find documents with the same IP address
+    const sameIp = await Attendance.aggregate([
+      {
+        $geoNear: {
+          near: { type: 'Point', coordinates: [refLongitude, refLatitude] },
+          distanceField: 'distance',
+          maxDistance: radiusInMeters,
+          spherical: true,
+          query: { session: sessionId, ipAddress: refIpAddress } // Same IP
+        }
+      }
+    ]);
+
+    // Send back the combined results
+    res.status(200).json({
+      withinDifferentIp,
+      outsideLocation,
+      sameIp
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
   });
 
 
