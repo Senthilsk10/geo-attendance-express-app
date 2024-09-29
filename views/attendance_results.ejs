@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Results</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Attendance Results</h1>
+
+<h2>Within Different IP</h2>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Session</th>
+            <th>Roll No</th>
+            <th>Location</th>
+            <th>IP Address</th>
+            <th>Timestamp</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% withinDifferentIp.forEach(record => { %>
+            <tr>
+                <td><%= record._id %></td>
+                <td><%= record.session %></td>
+                <td><%= record.rollNo %></td>
+                <td>Latitude: <%= record.location.coordinates[1] %>, Longitude: <%= record.location.coordinates[0] %></td>
+                <td><%= record.ipAddress %></td>
+                <td><%= record.timestamp.toISOString() %></td>
+            </tr>
+        <% }); %>
+    </tbody>
+</table>
+
+<h2>With Same IP</h2>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Session</th>
+            <th>Roll No</th>
+            <th>Location</th>
+            <th>IP Address</th>
+            <th>Timestamp</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% sameIp.forEach(record => { %>
+            <tr>
+                <td><%= record._id %></td>
+                <td><%= record.session %></td>
+                <td><%= record.rollNo %></td>
+                <td>Latitude: <%= record.location.coordinates[1] %>, Longitude: <%= record.location.coordinates[0] %></td>
+                <td><%= record.ipAddress %></td>
+                <td><%= record.timestamp.toISOString() %></td>
+            </tr>
+        <% }); %>
+    </tbody>
+</table>
+
+</body>
+</html>

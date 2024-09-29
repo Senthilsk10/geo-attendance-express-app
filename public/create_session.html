@@ -5,15 +5,62 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Session</title>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            margin: 0;
+            background-color: #f9f9f9;
+        }
+
+        h1, h2 {
+            color: #333;
+            text-align: center;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+
+        label {
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"], button {
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
         #shareLinkContainer {
             display: none;
             margin-top: 20px;
+            text-align: center;
         }
+
         #shareLink {
             border: 1px solid #ccc;
             padding: 10px;
             width: 100%;
+            font-size: 16px;
         }
+
         #attendance {
             border: 1px solid #ccc; /* Same border as share link */
             padding: 10px; /* Same padding */
@@ -26,8 +73,16 @@
             color: #333; /* Text color */
             transition: background-color 0.3s; /* Smooth background transition */
         }
+
         #attendance:hover {
             background-color: #e0e0e0; /* Darken background on hover */
+        }
+
+        @media (max-width: 600px) {
+            input[type="text"], button, #shareLink {
+                font-size: 14px; /* Smaller font size for mobile */
+                padding: 8px; /* Reduced padding for mobile */
+            }
         }
     </style>
 </head>
@@ -38,15 +93,10 @@
     <form id="sessionForm">
         <label for="name">Staff Name:</label>
         <input type="text" id="name" name="name" placeholder="Enter staff name" required>
-        <br><br>
-
         <label for="subject">Subject:</label>
         <input type="text" id="subject" name="subject" placeholder="Enter subject" required>
-        <br><br>
-
         <input type="hidden" id="latitude" name="latitude">
         <input type="hidden" id="longitude" name="longitude">
-        
         <button type="submit">Create Session</button>
     </form>
 
@@ -55,7 +105,6 @@
         <p>Copy and share this link with others:</p>
         <input type="text" id="shareLink" readonly>
         <button onclick="copyToClipboard()">Copy Link</button>
-
         <a id="attendance" href="#" style="display: none;">Click here to get attendance data</a>
     </div>
 

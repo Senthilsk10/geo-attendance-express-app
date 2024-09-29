@@ -89,7 +89,6 @@ app.get('/create-session', (req, res) => {
 
 app.post('/create-session', async (req, res) => {
     const { name, subject, latitude,longitude } = req.body;
-    console.log(req.body);
     
     const newSession = new Session({
       name,
@@ -112,7 +111,7 @@ app.post('/create-session', async (req, res) => {
 
 app.post('/attendance', async (req, res) => {
   const { sessionId, rollno,latitude, longitude, ipAddress } = req.body;
-  console.log(req.body);
+  // console.log(req.body);
 
   const newAttendance = new Attendance({
     session:sessionId,  // This should be a valid Session ObjectId
@@ -123,7 +122,7 @@ app.post('/attendance', async (req, res) => {
     },
     ipAddress
   });
-console.log('doc: ',newAttendance);
+// console.log('doc: ',newAttendance);
   try {
     const savedAttendance = await newAttendance.save();
     res.status(201).json({ message: 'Attendance recorded', data: savedAttendance });
@@ -136,17 +135,12 @@ console.log('doc: ',newAttendance);
 
 app.get('/attendance/:sessionId', async (req, res) => {
     const { sessionId } = req.params;
-    console.log(sessionId);
   
     try {
-      // Fetch session details from the database
       const session = await Session.findById(sessionId);
-    //   console.log(session);
       if (!session) {
         return res.status(404).json({ message: 'Session not found' });
       }
-  
-      // Render the attendance form EJS template and pass session data
       res.render('attendance_form', {
         sessionName: session.name,
         sessionSubject: session.subject,
@@ -160,23 +154,20 @@ app.get('/attendance/:sessionId', async (req, res) => {
 
   const earthRadiusInMeters = 6371000;
 
-  // Express route to get documents within 10 meters of each other for a session
 app.get('/session/:sessionId', async (req, res) => {
   try {
     const sessionId =new  mongoose.Types.ObjectId(req.params.sessionId);
-    const radiusInMeters = 10; // 10 meter radius
+    const radiusInMeters = 10; 
 
-    // Find one document to use as a reference for coordinates and IP address
     const referenceDoc = await Attendance.findOne({ session: sessionId });
 
     if (!referenceDoc || !referenceDoc.location || !referenceDoc.location.coordinates) {
-      return res.status(404).json({ message: 'Reference location not found for this session' });
+      return res.sendFile(path.join(__dirname, 'public', 'error.html'));
     }
 
     const [refLongitude, refLatitude] = referenceDoc.location.coordinates;
     const refIpAddress = referenceDoc.ipAddress;
 
-    // Aggregation pipeline to find documents within 10 meters and different IP addresses
     const withinDifferentIp = await Attendance.aggregate([
       {
         $geoNear: {
@@ -184,29 +175,11 @@ app.get('/session/:sessionId', async (req, res) => {
           distanceField: 'distance',
           maxDistance: radiusInMeters,
           spherical: true,
-          query: { session: sessionId, ipAddress: { $ne: refIpAddress } } // Exclude same IP
+          query: { session: sessionId, ipAddress: { $ne: refIpAddress } } 
         }
       }
     ]);
 
-    const outsideLocation = await Attendance.aggregate([
-      {
-        $geoNear: {
-          near: { type: 'Point', coordinates: [refLongitude, refLatitude] },
-          distanceField: 'distance',
-          maxDistance: radiusInMeters,
-          spherical: true,
-          query: { session: sessionId }
-        }
-      },
-      {
-        $match: {
-          $expr: { $gt: ['$distance', radiusInMeters] } // Only keep documents outside the radius
-        }
-      }
-    ]);
-
-    // Aggregation pipeline to find documents with the same IP address
     const sameIp = await Attendance.aggregate([
       {
         $geoNear: {
@@ -214,25 +187,27 @@ app.get('/session/:sessionId', async (req, res) => {
           distanceField: 'distance',
           maxDistance: radiusInMeters,
           spherical: true,
-          query: { session: sessionId, ipAddress: refIpAddress } // Same IP
+          query: { session: sessionId, ipAddress: refIpAddress }
         }
       }
     ]);
 
-    // Send back the combined results
-    res.status(200).json({
+    res.render('attendance_results', {
       withinDifferentIp,
-      outsideLocation,
       sameIp
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server Error' });
+    res.status(500).json({ message: 'Server Error',stack:error });
   }
   });
 
 
-// Start Server
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
