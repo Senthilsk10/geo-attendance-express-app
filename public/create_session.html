@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Session</title>
+    <style>
+        #shareLinkContainer {
+            display: none;
+            margin-top: 20px;
+        }
+        #shareLink {
+            border: 1px solid #ccc;
+            padding: 10px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Create a New Session</h1>
+
+    <form id="sessionForm">
+        <label for="name">Staff Name:</label>
+        <input type="text" id="name" name="name" placeholder="Enter staff name" required>
+        <br><br>
+
+        <label for="subject">Subject:</label>
+        <input type="text" id="subject" name="subject" placeholder="Enter subject" required>
+        <br><br>
+
+        <input type="hidden" id="latitude" name="latitude">
+        <input type="hidden" id="longitude" name="longitude">
+        
+        <button type="submit">Create Session</button>
+    </form>
+
+    <div id="shareLinkContainer">
+        <h2>Session Created!</h2>
+        <p>Copy and share this link with others:</p>
+        <input type="text" id="shareLink" readonly>
+        <button onclick="copyToClipboard()">Copy Link</button>
+    </div>
+
+    <script>
+        document.getElementById('sessionForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('name').value;
+            const subject = document.getElementById('subject').value;
+
+            if (!name || !subject) {
+                alert('Please fill out all fields.');
+                return;
+            }
+
+            // Get the user's geolocation
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        document.getElementById('latitude').value = position.coords.latitude;
+                        document.getElementById('longitude').value = position.coords.longitude;
+                    },
+                    (error) => {
+                        console.error('Error getting location:', error);
+                        alert('Unable to fetch location.');
+                    }
+                );
+            } else {
+                alert('Geolocation is not supported by this browser.');
+            }
+
+            // Submit the form via fetch (POST request)
+            try {
+                const response = await fetch('/create-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, subject })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.sessionId) {
+                    const shareLink = `${window.location.origin}/attendance/${data.sessionId}`;
+                    document.getElementById('shareLink').value = shareLink;
+                    document.getElementById('shareLinkContainer').style.display = 'block';
+                } else {
+                    alert('Error creating session: ' + data.message);
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            }
+        });
+
+        // Copy the link to the clipboard
+        function copyToClipboard() {
+            const link = document.getElementById('shareLink');
+            link.select();
+            link.setSelectionRange(0, 99999); // For mobile devices
+            document.execCommand('copy');
+            alert('Link copied to clipboard!');
+        }
+    </script>
+
+</body>
+</html>

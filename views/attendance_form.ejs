@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance for <%= sessionName %></title>
+</head>
+<body>
+
+    <h1>Attendance for <%= sessionName %> - <%= sessionSubject %></h1>
+
+    <form id="attendanceForm">
+        <input type="hidden" id="sessionId" name="sessionId" value="<%= sessionId %>">
+        <input type="hidden" id="ipAddress" name="ipAddress">
+        <input type="hidden" id="latitude" name="latitude">
+        <input type="hidden" id="longitude" name="longitude">
+
+        <label for="rollno"> Roll number:</label>
+        <input type="text" id="staffName" name="rollno" placeholder="Enter your roll number" required>
+        <br><br>
+
+        <button type="submit">Submit Attendance</button>
+    </form>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get the IP address using an external service
+            fetch('https://api.ipify.org?format=json')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('ipAddress').value = data.ip;
+                })
+                .catch(error => {
+                    console.error('Error fetching IP:', error);
+                    alert('Unable to fetch IP address.');
+                });
+
+            // Get the user's geolocation
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        document.getElementById('latitude').value = position.coords.latitude;
+                        document.getElementById('longitude').value = position.coords.longitude;
+                    },
+                    (error) => {
+                        console.error('Error getting location:', error);
+                        alert('Unable to fetch location.');
+                    }
+                );
+            } else {
+                alert('Geolocation is not supported by this browser.');
+            }
+        });
+
+        document.getElementById('attendanceForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/attendance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('Attendance submitted successfully!');
+                } else {
+                    alert('Error submitting attendance: ' + result.message + result.stack);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            }
+        });
+    </script>
+
+</body>
+</html>
