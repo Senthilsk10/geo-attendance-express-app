@@ -1,0 +1,19 @@
+{
+    "version": 2,
+    "builds": [
+      {
+        "src": "app.js",
+        "use": "@vercel/node"
+      }
+    ],
+    "routes": [
+      {
+        "src": "/(.*)",
+        "dest": "/app.js"
+      }
+    ],
+    "env": {
+      "MONGODB_URI": "mongodb+srv://senthil3226w:senthil3226w@cluster0.xfxlssz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    }
+  }
+  
