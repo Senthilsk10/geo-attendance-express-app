@@ -88,7 +88,7 @@
         <input type="hidden" id="latitude" name="latitude">
         <input type="hidden" id="longitude" name="longitude">
 
-        <label for="rollno"> Roll number:</label>
+        <label for="rollno">Roll number:</label>
         <input type="text" id="staffName" name="rollno" placeholder="Enter your roll number" required>
         
         <button type="submit">Submit Attendance</button>
@@ -133,8 +133,26 @@
             }
         });
 
+        // Helper function to get a cookie by name
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+
         document.getElementById('attendanceForm').addEventListener('submit', async function(event) {
             event.preventDefault();
+
+            const sessionId = document.getElementById('sessionId').value;
+            // console.log(sessionId);
+
+            // Check if the sessionId cookie exists and has value `true`
+            const attendanceCookie = getCookie(sessionId);
+            // console.log(attendanceCookie);
+            if (attendanceCookie === 'true') {
+                alert('You have already submitted your attendance for this session.');
+                return; // Stop form submission
+            }
 
             const formData = new FormData(this);
             const data = Object.fromEntries(formData.entries());

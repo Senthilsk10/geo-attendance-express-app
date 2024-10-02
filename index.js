@@ -109,29 +109,30 @@ app.post('/create-session', async (req, res) => {
   });
 
 
-app.post('/attendance', async (req, res) => {
-  const { sessionId, rollno,latitude, longitude, ipAddress } = req.body;
-  // console.log(req.body);
-
-  const newAttendance = new Attendance({
-    session:sessionId,  // This should be a valid Session ObjectId
-    rollNo: rollno,
-    location: {
-      type: 'Point',
-      coordinates: [parseFloat(longitude), parseFloat(latitude)] 
-    },
-    ipAddress
+  app.post('/attendance', async (req, res) => {
+    const { sessionId, rollno, latitude, longitude, ipAddress } = req.body;
+  
+    const newAttendance = new Attendance({
+      session: sessionId,  // This should be a valid Session ObjectId
+      rollNo: rollno,
+      location: {
+        type: 'Point',
+        coordinates: [parseFloat(longitude), parseFloat(latitude)] 
+      },
+      ipAddress
+    });
+  
+    try {
+      const savedAttendance = await newAttendance.save();
+  
+      res.cookie(sessionId, true);
+  
+      res.status(201).json({ message: 'Attendance recorded', data: savedAttendance });
+    } catch (err) {
+      res.status(500).json({ message: 'Error recording attendance', error: err.message, stack: err.stack });
+    }
   });
-// console.log('doc: ',newAttendance);
-  try {
-    const savedAttendance = await newAttendance.save();
-    res.status(201).json({ message: 'Attendance recorded', data: savedAttendance });
-  } catch (err) {
-    res.status(500).json({ message: 'Error recording attendance', error: err.message,stack: err.stack });
-  }
-});
-
-
+  
 
 app.get('/attendance/:sessionId', async (req, res) => {
     const { sessionId } = req.params;
